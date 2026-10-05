@@ -1,27 +1,13 @@
-export const config = { runtime: 'edge' };
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export default async function handler(req) {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    });
-  }
-
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const body = await req.json();
-    const { messages, max_tokens, temperature } = body;
+    const { messages, max_tokens, temperature } = req.body;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -32,39 +18,21 @@ export default async function handler(req) {
       body: JSON.stringify({
         model: 'gpt-oss-120b',
         messages,
-        stream: true,
+        stream: false,
         max_tokens: max_tokens || 1200,
         temperature: temperature || 0.7
       })
     });
 
+    const data = await groqRes.json();
+
     if (!groqRes.ok) {
-      const err = await groqRes.json();
-      return new Response(JSON.stringify({ error: err.error?.message || 'Groq error' }), {
-        status: groqRes.status,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return res.status(groqRes.status).json({ error: data.error?.message || 'Groq error' });
     }
 
-    return new Response(groqRes.body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return res.status(200).json(data);
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return res.status(500).json({ error: err.message });
   }
 }
