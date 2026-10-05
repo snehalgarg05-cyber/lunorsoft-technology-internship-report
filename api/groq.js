@@ -30,7 +30,7 @@ export default async function handler(req) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'gpt-oss-120b',
         messages,
         stream: true,
         max_tokens: max_tokens || 1200,
