@@ -211,32 +211,16 @@ async function groqStream(prompt, onChunk) {
     throw new Error(err.error?.message || 'Groq API error');
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
+  const data = await response.json();
+  const fullText = data.choices?.[0]?.message?.content || '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value);
-    const lines = chunk.split('\n');
-
-    for (const line of lines) {
-      if (!line.startsWith('data:')) continue;
-      const data = line.slice(5).trim();
-      if (data === '[DONE]') continue;
-      try {
-        const json = JSON.parse(data);
-        const delta = json.choices?.[0]?.delta?.content || '';
-        if (delta) {
-          fullText += delta;
-          onChunk(delta, fullText);
-        }
-      } catch (_) {
-        // skip malformed chunks
-      }
-    }
+  // Simulate streaming word by word for nice UI effect
+  const words = fullText.split(' ');
+  let current = '';
+  for (const word of words) {
+    current += (current ? ' ' : '') + word;
+    onChunk(word, current);
+    await new Promise(r => setTimeout(r, 18));
   }
 
   return fullText;
