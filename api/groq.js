@@ -1,25 +1,29 @@
-// Vercel Serverless Function - Groq API Proxy
-// This keeps your API key secret on the server
+export const config = { runtime: 'edge' };
 
-export default async function handler(req, res) {
-  // Allow requests from your frontend only
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight
+export default async function handler(req) {
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   try {
-    const { messages, max_tokens, temperature } = req.body;
+    const body = await req.json();
+    const { messages, max_tokens, temperature } = body;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
@@ -34,29 +38,33 @@ export default async function handler(req, res) {
       })
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      return res.status(response.status).json({ error: err.error?.message || 'Groq API error' });
+    if (!groqRes.ok) {
+      const err = await groqRes.json();
+      return new Response(JSON.stringify({ error: err.error?.message || 'Groq error' }), {
+        status: groqRes.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
-    // Stream the response back to frontend
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    return new Response(groqRes.body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      res.write(chunk);
-    }
-
-    res.end();
-
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   }
 }
