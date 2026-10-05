@@ -197,7 +197,6 @@ async function groqStream(prompt, onChunk) {
   // Always use proxy - API key is stored safely on Vercel server
   const response = await fetch('/api/groq', {
     method: 'POST',
-    headers,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: [{ role: 'user', content: prompt }],
