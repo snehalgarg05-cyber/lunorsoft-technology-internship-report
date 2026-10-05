@@ -235,7 +235,7 @@ async function groqStream(prompt, onChunk) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'gpt-oss-120b',
+      model: 'openai/gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
       stream: true,
       max_tokens: 1200,
