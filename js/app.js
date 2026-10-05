@@ -208,12 +208,19 @@ async function startGeneration() {
 
 // ---- GROQ STREAMING ----
 async function groqStream(prompt, onChunk) {
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  // Use proxy server so API key stays secret
+  // If user has their own key, call Groq directly
+  const useProxy = !GROQ_KEY;
+  const url = useProxy
+    ? '/api/groq'
+    : 'https://api.groq.com/openai/v1/chat/completions';
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (!useProxy) headers['Authorization'] = `Bearer ${GROQ_KEY}`;
+
+  const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_KEY}`,
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
