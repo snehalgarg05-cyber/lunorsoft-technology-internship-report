@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AppForge AI - AI-Powered App Development Tool</title>
+<link rel="stylesheet" href="css/style.css" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h3>Connect Groq API</h3>
+    <p>Paste your Groq API key below. It stays in your browser and is never sent anywhere except Groq's API.</p>
+    <label>Groq API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="gsk_..." />
+    <div class="modal-hint">
+      Get a free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> - no credit card needed.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">⚙</div>
+    App<span>Forge</span> AI
+  </a>
+  <div class="header-right">
+    <div class="api-badge">
+      <div class="dot" id="apiDot"></div>
+      <span id="apiStatus">No key set</span>
+    </div>
+    <button class="btn-setup" onclick="openModal()">Setup API</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">Lunor Internship - Round 1</div>
+    <h1>Turn your app idea into a <em>complete development plan</em> with AI</h1>
+    <p>Describe any app you want to build. AppForge AI will understand your idea, plan the architecture, generate starter code, explain every decision, and help you learn as you build.</p>
+  </section>
+
+  <!-- PIPELINE -->
+  <div class="pipeline">
+    <div class="pipe-step active" id="ps1"><div class="num">1</div> Understand</div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" id="ps2"><div class="num">2</div> Plan</div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" id="ps3"><div class="num">3</div> Build</div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" id="ps4"><div class="num">4</div> Explain</div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" id="ps5"><div class="num">5</div> Learn</div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-card">
+    <div class="input-label">
+      Describe your app idea
+      <span>Powered by Groq + LLaMA</span>
+    </div>
+    <textarea class="idea-input" id="ideaInput"
+      placeholder="e.g. A habit tracking app where users can log daily habits, see streaks, and get weekly progress reports..."
+      rows="3"></textarea>
+    <div class="input-footer">
+      <div class="examples">
+        <span>Try:</span>
+        <button class="example-pill" onclick="fillExample('A food delivery app with real-time order tracking and restaurant discovery')">Food delivery app</button>
+        <button class="example-pill" onclick="fillExample('A personal finance tracker that categorizes expenses and shows spending charts')">Finance tracker</button>
+        <button class="example-pill" onclick="fillExample('A real-time chat app with group rooms, message reactions, and file sharing')">Chat app</button>
+        <button class="example-pill" onclick="fillExample('An e-learning platform where instructors upload video courses and students track progress')">E-learning platform</button>
+      </div>
+      <button class="generate-btn" id="generateBtn" onclick="startGeneration()">
+        <div class="spinner" id="spinner"></div>
+        <span id="generateBtnText">⚡ Generate App Plan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-panels" id="outputPanels">
+
+    <div class="stage-tabs">
+      <button class="stage-tab active" data-tab="understand" onclick="switchTab('understand')">
+        <span class="tab-icon">🔍</span> Understand <span class="tab-dot" id="dot-understand"></span>
+      </button>
+      <button class="stage-tab" data-tab="plan" onclick="switchTab('plan')">
+        <span class="tab-icon">📄</span> Plan <span class="tab-dot" id="dot-plan"></span>
+      </button>
+      <button class="stage-tab" data-tab="build" onclick="switchTab('build')">
+        <span class="tab-icon">💻</span> Build <span class="tab-dot" id="dot-build"></span>
+      </button>
+      <button class="stage-tab" data-tab="explain" onclick="switchTab('explain')">
+        <span class="tab-icon">💡</span> Explain <span class="tab-dot" id="dot-explain"></span>
+      </button>
+      <button class="stage-tab" data-tab="learn" onclick="switchTab('learn')">
+        <span class="tab-icon">🎓</span> Learn <span class="tab-dot" id="dot-learn"></span>
+      </button>
+    </div>
+
+    <!-- UNDERSTAND -->
+    <div class="stage-panel active" id="panel-understand">
+      <div class="stage-box">
+        <div class="stage-box-header">
+          <div class="stage-box-title">
+            <div class="stage-icon-wrap indigo">🔍</div>
+            Understanding your idea
+          </div>
+          <button class="copy-btn" onclick="copyContent('understandContent')">📋 Copy</button>
+        </div>
+        <div class="stage-content" id="understandContent">
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>Ready to understand your idea</h3>
+            <p>Describe your app above and click Generate. AppForge will analyze what you want to build, who it's for, and what problems it solves.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="stage-panel" id="panel-plan">
+      <div class="stage-box">
+        <div class="stage-box-header">
+          <div class="stage-box-title">
+            <div class="stage-icon-wrap teal">📄</div>
+            Technical architecture plan
+          </div>
+          <button class="copy-btn" onclick="copyContent('planContent')">📋 Copy</button>
+        </div>
+        <div id="planContent">
+          <div class="stage-content">
+            <div class="empty-state">
+              <div class="empty-icon">📄</div>
+              <h3>Plan will appear here</h3>
+              <p>AppForge will lay out the full technical roadmap: stack choices, database schema, APIs, and development phases.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUILD -->
+    <div class="stage-panel" id="panel-build">
+      <div class="stage-box">
+        <div class="stage-box-header">
+          <div class="stage-box-title">
+            <div class="stage-icon-wrap amber">💻</div>
+            Starter code
+          </div>
+          <button class="copy-btn" onclick="copyActiveCode()">📋 Copy code</button>
+        </div>
+        <div class="code-header">
+          <div class="code-dot r"></div>
+          <div class="code-dot y"></div>
+          <div class="code-dot g"></div>
+          <span class="code-filename" id="codeFilename">server.js</span>
+        </div>
+        <div class="code-tabs" id="codeTabs">
+          <div class="code-tab active" onclick="switchCodeTab(this,'backend')">Backend</div>
+          <div class="code-tab" onclick="switchCodeTab(this,'frontend')">Frontend</div>
+          <div class="code-tab" onclick="switchCodeTab(this,'database')">Database</div>
+        </div>
+        <div class="code-body">
+          <pre class="code-block active" id="code-backend">// Waiting for generation...</pre>
+          <pre class="code-block" id="code-frontend">// Waiting for generation...</pre>
+          <pre class="code-block" id="code-database">-- Waiting for generation...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPLAIN -->
+    <div class="stage-panel" id="panel-explain">
+      <div class="stage-box">
+        <div class="stage-box-header">
+          <div class="stage-box-title">
+            <div class="stage-icon-wrap green">💡</div>
+            Why this architecture
+          </div>
+          <button class="copy-btn" onclick="copyContent('explainContent')">📋 Copy</button>
+        </div>
+        <div id="explainContent">
+          <div class="explain-body">
+            <div class="empty-state">
+              <div class="empty-icon">💡</div>
+              <h3>Explanation will appear here</h3>
+              <p>AppForge will explain every technical decision - why this stack, why this database, and what tradeoffs were made.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEARN -->
+    <div class="stage-panel" id="panel-learn">
+      <div class="stage-box">
+        <div class="stage-box-header">
+          <div class="stage-box-title">
+            <div class="stage-icon-wrap pink">🎓</div>
+            Learning roadmap
+          </div>
+          <button class="copy-btn" onclick="copyContent('learnContent')">📋 Copy</button>
+        </div>
+        <div id="learnContent">
+          <div class="quiz-area" id="learnBody">
+            <div class="empty-state">
+              <div class="empty-icon">🎓</div>
+              <h3>Learning plan will appear here</h3>
+              <p>Get a personalized roadmap of concepts to learn, tools to explore, and a mini quiz to test your understanding.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<div class="footer-strip">
+  <span>AppForge AI &mdash; Built for Lunor Internship Round 1</span>
+  <div class="tech-badges">
+    <span class="tech-badge">Groq API</span>
+    <span class="tech-badge">LLaMA 3.3 70B</span>
+    <span class="tech-badge">Vanilla JS</span>
+    <span class="tech-badge">HTML5</span>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
