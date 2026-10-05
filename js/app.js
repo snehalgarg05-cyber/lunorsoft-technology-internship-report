@@ -4,18 +4,47 @@
    ======================================== */
 
 // ---- STATE ----
-let GROQ_KEY = '';
+let GROQ_KEY = localStorage.getItem('appforge_groq_key') || '';
 let currentIdea = '';
 let activeCodeTab = 'backend';
 let quizAnswered = {};
 
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
+  updateApiStatus();
+});
+
+function updateApiStatus() {
   const dot = document.getElementById('apiDot');
   const status = document.getElementById('apiStatus');
-  dot.className = 'dot connected';
-  status.textContent = 'Groq connected';
-});
+  if (GROQ_KEY) {
+    dot.className = 'dot connected';
+    status.textContent = 'Groq connected';
+  } else {
+    dot.className = 'dot';
+    status.textContent = 'No key set';
+  }
+}
+
+// ---- MODAL ----
+function openModal() {
+  document.getElementById('apiModal').classList.add('open');
+  document.getElementById('apiKeyInput').value = GROQ_KEY;
+}
+
+function closeModal() {
+  document.getElementById('apiModal').classList.remove('open');
+}
+
+function saveKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  GROQ_KEY = key;
+  localStorage.setItem('appforge_groq_key', key);
+  updateApiStatus();
+  closeModal();
+  showToast('API key saved!');
+}
 
 // ---- MODAL ----
 function openModal() {
@@ -156,6 +185,11 @@ async function startGeneration() {
     return;
   }
 
+  if (!GROQ_KEY) {
+    openModal();
+    return;
+  }
+
   currentIdea = idea;
 
   const btn = document.getElementById('generateBtn');
@@ -194,12 +228,16 @@ async function startGeneration() {
 
 // ---- GROQ STREAMING ----
 async function groqStream(prompt, onChunk) {
-  // Always use proxy - API key is stored safely on Vercel server
-  const response = await fetch('/api/groq', {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${GROQ_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
+      model: 'gpt-oss-120b',
       messages: [{ role: 'user', content: prompt }],
+      stream: true,
       max_tokens: 1200,
       temperature: 0.7
     })
@@ -210,16 +248,28 @@ async function groqStream(prompt, onChunk) {
     throw new Error(err.error?.message || 'Groq API error');
   }
 
-  const data = await response.json();
-  const fullText = data.choices?.[0]?.message?.content || '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
 
-  // Simulate streaming word by word for nice UI effect
-  const words = fullText.split(' ');
-  let current = '';
-  for (const word of words) {
-    current += (current ? ' ' : '') + word;
-    onChunk(word, current);
-    await new Promise(r => setTimeout(r, 18));
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const json = JSON.parse(data);
+        const delta = json.choices?.[0]?.delta?.content || '';
+        if (delta) {
+          fullText += delta;
+          onChunk(delta, fullText);
+        }
+      } catch (_) {}
+    }
   }
 
   return fullText;
