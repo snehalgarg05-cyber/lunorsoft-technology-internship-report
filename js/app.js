@@ -4,27 +4,18 @@
    ======================================== */
 
 // ---- STATE ----
-let GROQ_KEY = localStorage.getItem('appforge_groq_key') || '';
+let GROQ_KEY = '';
 let currentIdea = '';
 let activeCodeTab = 'backend';
 let quizAnswered = {};
 
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
-  updateApiStatus();
-});
-
-function updateApiStatus() {
   const dot = document.getElementById('apiDot');
   const status = document.getElementById('apiStatus');
-  if (GROQ_KEY) {
-    dot.className = 'dot connected';
-    status.textContent = 'Groq connected';
-  } else {
-    dot.className = 'dot';
-    status.textContent = 'No key set';
-  }
-}
+  dot.className = 'dot connected';
+  status.textContent = 'Groq connected';
+});
 
 // ---- MODAL ----
 function openModal() {
@@ -165,11 +156,6 @@ async function startGeneration() {
     return;
   }
 
-  if (!GROQ_KEY) {
-    openModal();
-    return;
-  }
-
   currentIdea = idea;
 
   const btn = document.getElementById('generateBtn');
@@ -208,23 +194,13 @@ async function startGeneration() {
 
 // ---- GROQ STREAMING ----
 async function groqStream(prompt, onChunk) {
-  // Use proxy server so API key stays secret
-  // If user has their own key, call Groq directly
-  const useProxy = !GROQ_KEY;
-  const url = useProxy
-    ? '/api/groq'
-    : 'https://api.groq.com/openai/v1/chat/completions';
-
-  const headers = { 'Content-Type': 'application/json' };
-  if (!useProxy) headers['Authorization'] = `Bearer ${GROQ_KEY}`;
-
-  const response = await fetch(url, {
+  // Always use proxy - API key is stored safely on Vercel server
+  const response = await fetch('/api/groq', {
     method: 'POST',
     headers,
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }],
-      stream: true,
       max_tokens: 1200,
       temperature: 0.7
     })
