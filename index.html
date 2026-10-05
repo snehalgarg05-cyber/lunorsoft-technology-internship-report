@@ -9,6 +9,23 @@
 </head>
 <body>
 
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h3>Connect Groq API</h3>
+    <p>Paste your Groq API key below. It stays in your browser and is never sent anywhere except Groq's API.</p>
+    <label>Groq API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="gsk_..." />
+    <div class="modal-hint">
+      Get a free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> - no credit card needed.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header>
   <a class="logo" href="#">
@@ -17,9 +34,10 @@
   </a>
   <div class="header-right">
     <div class="api-badge">
-      <div class="dot connected" id="apiDot"></div>
-      <span id="apiStatus">Groq connected</span>
+      <div class="dot" id="apiDot"></div>
+      <span id="apiStatus">No key set</span>
     </div>
+    <button class="btn-setup" onclick="openModal()">Setup API</button>
   </div>
 </header>
 
